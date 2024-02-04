@@ -1,7 +1,7 @@
 import XCTest
-@testable import basedAppSwift
+@testable import BasedAppSwift
 
-final class basedAppSwiftTests: XCTestCase {
+final class BasedAppSwiftTests: XCTestCase {
     func testExample() throws {
         // XCTest Documentation
         // https://developer.apple.com/documentation/xctest
