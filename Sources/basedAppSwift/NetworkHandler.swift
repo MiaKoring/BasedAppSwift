@@ -3,7 +3,7 @@ import Foundation
 
 public class NetworkHandler {
     private var evaluators: [String: ServerTrustEvaluating]
-    private var manager: ServerTrustManager
+    public var manager: ServerTrustManager
     
     public init(){
         self.evaluators = ["touchthegrass.de": PublicKeysTrustEvaluator()]
@@ -14,17 +14,23 @@ public class NetworkHandler {
         print(Bundle.main.af.certificates)
     }
     
-    public func getApiKey()async throws -> Void{
-        let session = Session(serverTrustManager: self.manager)
-        let jsonParameters = ["token": "u20eYvGHpUk082x8P5qEVXizcVKcnDYk"]
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: jsonParameters)
-            let result = session.request("https://touchthegrass.de/token/iosApp", parameters: jsonData, headers: HTTPHeaders(["token": "u20eYvGHpUk082x8P5qEVXizcVKcnDYk"])).response
-            print(result)
-        } catch {
-            print("Fehler bei der JSON-Serialisierung: \(error)")
-        }
+    public func getApiKey(_ session: Session, completion: @escaping (Result<String, Error>) -> Void) {
+        let jsonParameters = ["recoveryCodes": [
+            "8IVyt5SnYmLpuLDk",
+            "DhjA2PKnd4OLTNFl",
+            "A0jxxmMthNa6oNHB",
+            "na2gK2Etfvn0Hitf",
+            "GYpinMiHsDnjtRUZ"
+        ]]
         
+        session.request("https://touchthegrass.de/user/TOTP", method: .post, parameters: jsonParameters, encoder: JSONParameterEncoder.default, headers: HTTPHeaders(["Content-Type": "Application/json"])).responseString { response in
+            switch response.result {
+            case .success(let value):
+                completion(.success(value))
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
     }
     
 }
