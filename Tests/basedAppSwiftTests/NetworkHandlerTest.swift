@@ -7,6 +7,7 @@
 
 import XCTest
 @testable import BasedAppSwift
+import Alamofire
 
 final class NetworkHandlerTest: XCTestCase {
 
@@ -19,7 +20,7 @@ final class NetworkHandlerTest: XCTestCase {
     }
 
     func testExample() throws {
-        let handler = NetworkHandler()
+        let handler = NetworkHandler(host: "touchthegrass.de")
         handler.printCertificates()
     }
 

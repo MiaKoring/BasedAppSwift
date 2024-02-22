@@ -19,7 +19,7 @@ public class NetworkHandler {
     public func createUser(_ session: Session, loginMethod: LoginMethod, recoveryCodes: [String], completion: @escaping (Result<String, Error>) -> Void) {
         let jsonParameters = ["recoveryCodes": recoveryCodes]
         
-        session.request("https://\(self.host)/user/\(loginMethod.rawValue)", method: .post, parameters: jsonParameters, encoder: JSONParameterEncoder.default, headers: HTTPHeaders(["Content-Type": "Application/json"])).responseString { response in
+        session.request("https://\(self.host)/user/\(loginMethod.rawValue)", method: .post, parameters: jsonParameters, encoder: JSONParameterEncoder.default, headers: HTTPHeaders()).responseString { response in
             switch response.result {
             case .success(let value):
                 completion(.success(value))
@@ -29,16 +29,11 @@ public class NetworkHandler {
         }
     }
     
-    public func loginWithDevice(_ session: Session, loginMethod: LoginMethod, login: Login, publicKey: String, deviceID: String){
+    public func loginWithDevice(_ session: Session, loginMethod: LoginMethod, login: Login, publicKey: String, deviceID: String, completion: @escaping (Result<String, Error>) -> Void){
         switch login{
         case .TOTP(let id, let code):
-            let jsonParameters: [
-                "userId": id,
-                "totp": code,
-                "publicKey": publicKey,
-                "deviceID": deviceID
-            ]
-            session.request("https://\(self.host)/device/\(loginMethod.rawValue)", method: .post, parameters: jsonParameters, encoder: JSONParameterEncoder.default, headers: HTTPHeaders(["Content-Type": "Application/json"])).responseString { response in
+            let login = UserLoginTOTP(userID: id, totp: code, publicKey: publicKey, deviceID: deviceID)
+            session.request("https://\(self.host)/device/\(loginMethod.rawValue)", method: .post, parameters: login, encoder: JSONParameterEncoder.default, headers: HTTPHeaders()).responseString { response in
                 switch response.result {
                 case .success(let value):
                     completion(.success(value))
@@ -62,4 +57,16 @@ public enum LoginMethod: String{
 public enum Login{
     case TOTP(Int, String)
     case mail(String, String)
+}
+
+struct UserLoginTOTP: Codable{
+    let userID: Int
+    let totp: String
+    let publicKey: String
+    let deviceID: String
+}
+
+public struct UserCreation: Codable {
+    public let userID: Int
+    public let access: String
 }
