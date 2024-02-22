@@ -4,26 +4,22 @@ import Foundation
 public class NetworkHandler {
     private var evaluators: [String: ServerTrustEvaluating]
     public var manager: ServerTrustManager
+    public let host: String
     
-    public init(){
-        self.evaluators = ["touchthegrass.de": PublicKeysTrustEvaluator()]
+    public init(host: String){
+        self.evaluators = [host: PublicKeysTrustEvaluator()]
         self.manager = ServerTrustManager(evaluators: self.evaluators)
+        self.host = host
     }
     
     public func printCertificates(){
         print(Bundle.main.af.certificates)
     }
     
-    public func getApiKey(_ session: Session, completion: @escaping (Result<String, Error>) -> Void) {
-        let jsonParameters = ["recoveryCodes": [
-            "8IVyt5SnYmLpuLDk",
-            "DhjA2PKnd4OLTNFl",
-            "A0jxxmMthNa6oNHB",
-            "na2gK2Etfvn0Hitf",
-            "GYpinMiHsDnjtRUZ"
-        ]]
+    public func createUser(_ session: Session, loginMethod: LoginMethod, recoveryCodes: [String], completion: @escaping (Result<String, Error>) -> Void) {
+        let jsonParameters = ["recoveryCodes": recoveryCodes]
         
-        session.request("https://touchthegrass.de/user/TOTP", method: .post, parameters: jsonParameters, encoder: JSONParameterEncoder.default, headers: HTTPHeaders(["Content-Type": "Application/json"])).responseString { response in
+        session.request("https://\(self.host)/user/\(loginMethod.rawValue)", method: .post, parameters: jsonParameters, encoder: JSONParameterEncoder.default, headers: HTTPHeaders(["Content-Type": "Application/json"])).responseString { response in
             switch response.result {
             case .success(let value):
                 completion(.success(value))
@@ -33,4 +29,37 @@ public class NetworkHandler {
         }
     }
     
+    public func loginWithDevice(_ session: Session, loginMethod: LoginMethod, login: Login, publicKey: String, deviceID: String){
+        switch login{
+        case .TOTP(let id, let code):
+            let jsonParameters: [
+                "userId": id,
+                "totp": code,
+                "publicKey": publicKey,
+                "deviceID": deviceID
+            ]
+            session.request("https://\(self.host)/device/\(loginMethod.rawValue)", method: .post, parameters: jsonParameters, encoder: JSONParameterEncoder.default, headers: HTTPHeaders(["Content-Type": "Application/json"])).responseString { response in
+                switch response.result {
+                case .success(let value):
+                    completion(.success(value))
+                case .failure(let error):
+                    completion(.failure(error))
+                }
+            }
+            break
+        case .mail(let mail, let password):
+            break
+        }
+    }
+    
+}
+
+public enum LoginMethod: String{
+    case TOTP = "TOTP"
+    case mail = "mail"
+}
+
+public enum Login{
+    case TOTP(Int, String)
+    case mail(String, String)
 }
